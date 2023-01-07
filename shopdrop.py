@@ -1,10 +1,6 @@
 import interpreter
 import sys
 
-def split(str):
-    return str.split("***")
-
-# def main():
 filestr = ""
 
 with open(sys.argv[1], "r") as f:
@@ -13,8 +9,3 @@ with open(sys.argv[1], "r") as f:
 interpreter = interpreter.interpreter(filestr)
 
 interpreter.run()
-
-print(split(filestr))
-
-# if __name__ == "__main__":
-#     main()
