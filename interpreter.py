@@ -30,9 +30,10 @@ class interpreter:
     def find_char(self, pos, char) -> list:
         for y, i in enumerate(self.map):
             for x, j in enumerate(i):
-                if x in range(pos[0] - 1, pos[0] + 1) and y in range(pos[1] - 1, pos[1] + 1):
-                    if j == char:
-                        return [x, y]
+                if (x in range(pos[1] - 1, pos[1] + 1)):
+                    if (y in range(pos[0] - 1, pos[0] + 1)):
+                        if j == char:
+                            return [y, x]
 
         return None
     
@@ -50,7 +51,6 @@ class interpreter:
                     slist[i].append(shopping_entry(food.ONION, slistraw[l][e]))
                 elif e == "potato" or e == "p":
                     slist[i].append(shopping_entry(food.POTATO, slistraw[l][e]))
-
         
         # save self.map
         buf = []
@@ -64,11 +64,12 @@ class interpreter:
         # find the car
         carPos = []
         carInv = [] # car inventory
+        carDir = 0 # car direction
 
         for y, i in enumerate(self.map):
             for x, j in enumerate(i):
                 if j == "=":
-                    carPos = [x, y]
+                    carPos = [y, x]
                     break
 
         # print(carPos[1])
@@ -80,18 +81,31 @@ class interpreter:
         currentList = 0
 
         while not eof:
-            if self.map[carPos[1]][carPos[0]] == "l":
+            if self.map[carPos[0]][carPos[1]] == "l":
                 # check if shop is in vicinity
-                carInv = []
-                shop_pos = self.find_char(carPos, "@")
-                if shop_pos == None:
-                    print("You fucking idiot. What were you thinking? What the hell were you thinking? You are attempting to load items from your shopping list, but there is no store within one character of your car! You dumbass.")
-                    break
+                storage_chars = ["$", "#", "+", "-", "@"]
+                c2store = ""
+                c2sloc = [] # and the award for worst variable name of the year goes to...
 
-                carInv.append(slist[0])
-                slist.remove(slist[0])
-            elif self.map[carPos[1]][carPos[0]] == "e":
-                storage_chars = ["%", "$", "#"]
+                for c in storage_chars:
+                    if self.find_char(carPos, c):
+                        c2store = c
+                        c2sloc = self.find_char(carPos, c)
+
+                if c2store == "@":
+                    for i in slist:
+                        carInv.append(i)
+                
+                    slist.remove(slist[0])
+
+                elif c2store == "$" or c2store == "#" or c2store == "+" or c2store == "-":
+                    for h in houses:
+                        if h.pos == c2sloc:
+                            carInv.append([shopping_entry(h.type, h.value)])
+                            houses.remove(h)
+                            break
+            elif self.map[carPos[0]][carPos[1]] == "e":
+                storage_chars = ["%", "$", "#", "+", "-"]
                 c2store = ""
                 c2sloc = [] # and the award for worst variable name of the year goes to...
 
@@ -110,7 +124,10 @@ class interpreter:
                     elif carInv[0][0].type == food.POTATO:
                         print(carInv[0][0].num, end="")
 
-                    carInv = []
+                    if len(slist) == 0:
+                        eof = True
+
+                    carInv.remove(carInv[0])
 
                 if c2store == "$":
                     if carInv[0][0].type == food.POTATO:
@@ -128,8 +145,61 @@ class interpreter:
                     houses.append(house(c2sloc, food.POTATO, carInv[0][0].num))
                     carInv = []
 
-            elif self.map[carPos[1]][carPos[0]] == ".":
+                elif c2store == "+":
+                    if carInv[0][0].type == food.ONION:
+                        print("This is a potato house. Dont throw those onions at me!")
+                        break
+                    houses.append(house(c2sloc, food.POTATO, carInv[0][0].num + carInv[1][0].num))
+                    carInv = []
+
+                elif c2store == "-":
+                    if carInv[0][0].type == food.ONION:
+                        print("This is a potato house. Dont throw those onions at me!")
+                        break
+                    houses.append(house(c2sloc, food.POTATO, carInv[0][0].num - carInv[1][0].num))
+                    carInv = []
+
+            elif self.map[carPos[0]][carPos[1]] == ".":
                 eof = True
-            
-            print(houses)
-            carPos[0] += 1
+
+            elif self.map[carPos[0]][carPos[1]] in ["0", "1", "2", "3"]:
+                allZero = True
+                for i in carInv:
+                    for e in i:
+                        if e.num != 0:
+                            allZero = False
+                            break
+
+                if allZero:
+                    carDir = int(self.map[carPos[0]][carPos[1]])
+
+            elif self.map[carPos[0]][carPos[1]] == "c": # clear inventory
+                carInv = []
+
+            elif self.map[carPos[0]][carPos[1]] == "d": # duplicate shopping list
+                slist.append(slist[0])
+
+            match self.map[carPos[0]][carPos[1]]:
+                case ">":
+                    carDir = 0
+                case "v":
+                    carDir = 1
+                case "<":
+                    carDir = 2
+                case "^":
+                    carDir = 3
+
+            match carDir:
+                case 0:
+                    carPos[1] += 1
+                case 1:
+                    carPos[0] += 1
+                case 2:
+                    carPos[1] -= 1
+                case 3:
+                    carPos[0] -= 1
+            # try:
+            #     print(self.map[houses[0].pos[1]][houses[0].pos[0]])
+            # except:
+            #     pass
+            #print(carInv)
